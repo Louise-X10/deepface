@@ -2,7 +2,7 @@
 import os
 import warnings
 import logging
-from typing import Any, Dict, IO, List, Union, Optional, Sequence
+from typing import Any, Dict, IO, List, Union, Optional, Sequence, Tuple
 
 # this has to be set before importing tensorflow
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
@@ -449,6 +449,36 @@ def represent(
         normalization=normalization,
         anti_spoofing=anti_spoofing,
         max_faces=max_faces,
+    )
+
+def process_image(
+    img_path: Union[IO[bytes], np.ndarray, Sequence[Union[np.ndarray, IO[bytes]]]],
+    target_size: Tuple = (160,160),
+    normalization: str = "base",
+) -> np.ndarray:
+    """
+    Process facial images and output processed image arrays (no face detection). 
+    
+    Args:
+        img_path (np.ndarray, IO[bytes], or Sequence[Union[np.ndarray, IO[bytes]]]):
+            The exact path to the image, a numpy array in BGR format,
+            a base64 encoded image, or a sequence of these.
+            If the source image contains multiple faces,
+            the result will include information for each detected face.
+
+        target_size (np.ndarray): input size of target model, target size to process image for 
+
+        normalization (string): Normalize the input image before feeding it to the model.
+            Default is base. Options: base, raw, Facenet, Facenet2018, VGGFace, VGGFace2, ArcFace
+
+
+    Returns:
+        batch_images (np.ndarray)
+    """
+    return representation.process_image(
+        img_path=img_path,
+        target_size=target_size,
+        normalization=normalization,
     )
 
 

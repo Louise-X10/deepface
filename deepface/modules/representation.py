@@ -1,9 +1,10 @@
 # built-in dependencies
-from typing import Any, Dict, List, Union, Optional, Sequence, IO
+from typing import Any, Dict, List, Union, Optional, Sequence, IO, Tuple
 from collections import defaultdict
 
 # 3rd party dependencies
 import numpy as np
+import torch
 
 # project dependencies
 from deepface.commons import image_utils
@@ -175,3 +176,60 @@ def represent(
     resp_objs = [resp_objs_dict[idx] for idx in range(len(images))]
 
     return resp_objs[0] if len(images) == 1 else resp_objs
+
+
+def process_image(
+    img_path: Union[IO[bytes], np.ndarray, Sequence[Union[np.ndarray, IO[bytes]]]],
+    target_size: Tuple = (160,160),
+    normalization: str = "base",
+) -> np.ndarray:
+    """
+    Process facial images and output processed image arrays (no face detection). 
+    
+    Args:
+        img_path (np.ndarray, IO[bytes], or Sequence[Union[np.ndarray, IO[bytes]]]):
+            The exact path to the image, a numpy array in BGR format,
+            a base64 encoded image, or a sequence of these.
+            If the source image contains multiple faces,
+            the result will include information for each detected face.
+
+        target_size (np.ndarray): input size of target model, target size to process image for 
+
+        normalization (string): Normalize the input image before feeding it to the model.
+            Default is base. Options: base, raw, Facenet, Facenet2018, VGGFace, VGGFace2, ArcFace
+
+
+    Returns:
+        batch_images (np.ndarray)
+    """
+
+    # Handle list of image paths or 4D numpy array
+    if isinstance(img_path, list):
+        images = img_path
+    ##* Change input from ndarray to tensor
+    elif isinstance(img_path, torch.Tensor) and img_path.ndim == 4:
+        images = [img_path[i] for i in range(img_path.shape[0])]
+    else:
+        images = [img_path]
+
+    batch_images = []
+
+    for img in images:    
+        # img is in BGR format
+        print(img.shape)
+
+        # resize to expected shape of ml model
+        img = preprocessing.resize_image(
+            img=img,
+            # thanks to DeepId (!)
+            target_size=(target_size[1], target_size[0]),
+        )
+        # custom normalization
+        img = preprocessing.normalize_input(img=img, normalization=normalization)
+
+        batch_images.append(img)
+
+    # Convert list of images to a numpy array for batch processing
+    batch_images = np.concatenate(batch_images, axis=0)
+
+    return batch_images
